@@ -17,11 +17,13 @@
 
  ### Install on Windows (PowerShell)
 
- 1. Install Go: https://go.dev/dl/ (Make sure `go` is on your PATH)
+ 1. Clone the repo
+ 
+ 2. Install Go: https://go.dev/dl/ (Make sure `go` is on your PATH)
 
- 2. Install Node.js: https://nodejs.org/
+ 3. Install Node.js: https://nodejs.org/
 
- 3. Install the Wails CLI (from a powershell prompt). Ensure your Go env has a `GOBIN` or `%GOPATH%\\bin` on PATH. Example:
+ 4. Install the Wails CLI (from a powershell prompt). Ensure your Go env has a `GOBIN` or `%GOPATH%\\bin` on PATH. Example:
 
  ```powershell
  # Install Wails CLI
