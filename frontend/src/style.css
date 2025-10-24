@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+@custom-variant hover (&:hover);
+:root {
+    --button-border-color: rgb(66,36,4);
+    --button-border-color-hover: rgb(86,56,12);
+}
+
+@layer utilities {
+    @keyframes breath {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+    }
+
+    .animate-breath {
+        animation: breath 2s ease-in-out infinite;
+    }
+}
+
+@font-face {
+    font-family: "MikoDacs";
+    src: local(""), url("assets/fonts/Mikodacs.woff2") format("woff");
+    font-weight: normal;
+    font-style: auto;
+}
+
+html, body, #app {
+    text-align: center;
+    color: white;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    box-sizing: border-box;
+}
