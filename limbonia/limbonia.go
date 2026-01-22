@@ -34,7 +34,7 @@ func (a *LimboniaApp) OpenFileDialog() (string, error) {
 		Title:           "Find Limbus Company Executable",
 		DefaultFilename: "LimbusCompany.exe",
 		Filters: []runtime.FileFilter{
-			runtime.FileFilter{
+			{
 				DisplayName: "LimbusCompany.exe",
 				Pattern:     "*.exe;*.jpg",
 			},
@@ -52,6 +52,11 @@ func (a *LimboniaApp) OpenFileDialog() (string, error) {
 	}
 	path := filepath.Dir(result)
 	config.Get().LimbusFolder = path
+	discord_game_sdk_path := path + "\\discord_game_sdk.dll"
+	if _, err := os.Stat(discord_game_sdk_path); err == nil {
+		os.Remove(discord_game_sdk_path)
+	}
+
 	config.Save()
 	if err != nil {
 		return "", err

@@ -17,11 +17,19 @@ var assets embed.FS
 
 func main() {
 
-	if _, err := os.Stat("./LLauncher.old"); os.IsExist(err) {
+	if _, err := os.Stat("./LLauncher.old"); err == nil {
 		os.Remove("./LLauncher.old")
 	}
 
 	config.Init()
+
+	conf := config.Get()
+
+	if conf.LimbusFolder != "" {
+		if _, err := os.Stat(conf.LimbusFolder + "\\discord_game_sdk.dll"); err == nil {
+			os.Remove(conf.LimbusFolder + "\\discord_game_sdk.dll")
+		}
+	}
 
 	app := NewApp()
 
