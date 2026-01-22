@@ -32,14 +32,6 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) CheckForDiscordDll() error {
-	config := config.Get()
-	if _, err := os.Stat(config.LimbusFolder + "/discord_game_sdk.dll"); os.IsNotExist(err) {
-		return fmt.Errorf("discord_game_sdk.dll not found in %s", config.LimbusFolder)
-	}
-	return nil
-}
-
 func (a *App) InjectLimbonia() error {
 	err := limbonia.InjectLimbo()
 

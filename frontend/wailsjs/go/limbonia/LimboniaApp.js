@@ -22,10 +22,6 @@ export function DownloadUpdate(arg1, arg2) {
   return window['go']['limbonia']['LimboniaApp']['DownloadUpdate'](arg1, arg2);
 }
 
-export function ExtractFile() {
-  return window['go']['limbonia']['LimboniaApp']['ExtractFile']();
-}
-
 export function GetConfig() {
   return window['go']['limbonia']['LimboniaApp']['GetConfig']();
 }

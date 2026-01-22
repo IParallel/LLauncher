@@ -14,8 +14,6 @@ export function DownloadLimbonia():Promise<void>;
 
 export function DownloadUpdate(arg1:string,arg2:string):Promise<void>;
 
-export function ExtractFile():Promise<void>;
-
 export function GetConfig():Promise<config.Config>;
 
 export function GetServerVersion():Promise<updater.UpdateResponse>;

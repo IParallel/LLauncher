@@ -16,9 +16,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-//go:embed discord_game_sdk.dll
-var sdk []byte
-
 type LimboniaApp struct {
 	ctx         context.Context
 	downloading bool
@@ -56,31 +53,10 @@ func (a *LimboniaApp) OpenFileDialog() (string, error) {
 	path := filepath.Dir(result)
 	config.Get().LimbusFolder = path
 	config.Save()
-	a.ExtractFile()
 	if err != nil {
 		return "", err
 	}
 	return path, nil
-}
-
-func (a *LimboniaApp) ExtractFile() error {
-
-	config := config.Get()
-	file, err := os.Create(config.LimbusFolder + "/discord_game_sdk.dll")
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		return err
-	}
-
-	defer file.Close()
-
-	_, err = file.Write(sdk)
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		return err
-	}
-	runtime.LogInfo(a.ctx, "Extracted Limbonia SDK")
-	return nil
 }
 
 func (a *LimboniaApp) CheckLimboniaVersion() bool {

@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 
-import {InjectLimbonia, CheckForDiscordDll} from "../../wailsjs/go/main/App";
+import {InjectLimbonia} from "../../wailsjs/go/main/App";
 import {EventsOn, LogError} from "../../wailsjs/runtime";
 import Lbutton from "./controls/lbutton.vue";
 import ProgressBar from "./controls/progressBar.vue";
@@ -17,9 +17,6 @@ const injectLimbo = async () => {
       toast.error("Please select Limbus Company executable in settings tab")
       return;
     }
-    
-    await CheckForDiscordDll();
-
 
     await InjectLimbonia();
     toast.success("Limbonia injected")
