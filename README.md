@@ -1,5 +1,8 @@
  # LLauncher
 
+[![Build Status](https://github.com/IParallel/LLauncher/actions/workflows/release.yml/badge.svg)](https://github.com/IParallel/LLauncher/actions/workflows/release.yml)
+
+
  This repository contains LLauncher — a Wails (Go + web frontend) desktop application.
 
  This README documents how to install prerequisites, run the app in development, and produce production builds on Windows (PowerShell examples). It also includes troubleshooting tips and where to find built artifacts.
