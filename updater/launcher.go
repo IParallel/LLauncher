@@ -12,7 +12,7 @@ const (
 	LAUNCHER_DOWNLOAD_URL    = "https://files.ibello.site/static/LLauncher.exe"
 	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.site/static/Limbus-Dumper.dll"
 	BOT_DOWNLOAD_URL         = "https://files.ibello.site/static/BotQuixote.exe"
-	CURRENT_LAUNCHER_VERSION = "3.0.3"
+	CURRENT_LAUNCHER_VERSION = "3.0.4"
 )
 
 type UpdateResponse struct {
