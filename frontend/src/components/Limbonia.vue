@@ -19,7 +19,7 @@ const injectLimbo = async () => {
     }
 
     await InjectLimbonia();
-    toast.success("Limbonia injected")
+    toast.success("Limbonia injecting...")
   } catch (e: any) {
     toast.error(e);
   }

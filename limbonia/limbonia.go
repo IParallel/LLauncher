@@ -52,6 +52,25 @@ func (a *LimboniaApp) OpenFileDialog() (string, error) {
 	}
 	path := filepath.Dir(result)
 	config.Get().LimbusFolder = path
+	limboniaDir := filepath.Join(".", "limbonia")
+	if err := os.Mkdir(limboniaDir, 0750); err != nil && !errors.Is(err, os.ErrExist) {
+		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+			Title:   "Failed to create Limbonia folder",
+			Message: err.Error(),
+			Type:    runtime.ErrorDialog,
+		})
+		return "", err
+	}
+	injectorCfgPath := filepath.Join(limboniaDir, "injector.cfg")
+	content := "exe=" + result + "\n"
+	if err := os.WriteFile(injectorCfgPath, []byte(content), 0644); err != nil {
+		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+			Title:   "Failed to write injector.cfg",
+			Message: err.Error(),
+			Type:    runtime.ErrorDialog,
+		})
+		return "", err
+	}
 	discord_game_sdk_path := path + "\\discord_game_sdk.dll"
 	if _, err := os.Stat(discord_game_sdk_path); err == nil {
 		os.Remove(discord_game_sdk_path)
@@ -88,7 +107,7 @@ func (a *LimboniaApp) DownloadLimbonia() error {
 		})
 		return err
 	}
-	err = a.DownloadUpdate(updater.INJECTOR_DOWNLOAD_URL, "./limbonia/injector.exe")
+	err = a.DownloadUpdate(updater.INJECTOR_DOWNLOAD_URL, "./limbonia/Injector.exe")
 	if err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
