@@ -67,18 +67,17 @@ func (a *App) OpenLimbusFolder() error {
 }
 
 func (a *App) OpenLimboniaFolder() error {
-
-	localAppData := os.Getenv("LOCALAPPDATA")
-
-	if localAppData == "" {
-		return fmt.Errorf("LOCALAPPDATA not set")
+	cfg := config.Get()
+	if cfg.LimbusFolder == "" {
+		return fmt.Errorf("Limbus folder not set")
 	}
 
-	if _, err := os.Stat(localAppData + "\\IBello\\Limbonia"); os.IsNotExist(err) {
-		return fmt.Errorf("Limbonia folder not found")
+	limboniaSettingsPath := filepath.Join(cfg.LimbusFolder, "Settings")
+	if _, err := os.Stat(limboniaSettingsPath); os.IsNotExist(err) {
+		return fmt.Errorf("Limbonia Settings folder not found")
 	}
 
-	return OpenFolder(localAppData + "\\IBello\\Limbonia")
+	return OpenFolder(limboniaSettingsPath)
 }
 
 func (a *App) DownloadLauncher() error {

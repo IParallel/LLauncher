@@ -1,6 +1,7 @@
 ﻿package limbonia
 
 import (
+	"WailsTest/config"
 	"fmt"
 	"os"
 	"os/exec"
@@ -148,13 +149,26 @@ func injectDLL(pid uint32, dllPath string) error {
 }
 
 func InjectLimbo() error {
-	injectorPath, _ := filepath.Abs(filepath.Join("./", "limbonia", "injector.exe"))
+	injectorPath, _ := filepath.Abs(filepath.Join("./", "limbonia", "Injector.exe"))
 
 	if _, err := os.Stat(injectorPath); err != nil {
 		return err
 	}
 
+	cfg := config.Get()
+	if cfg != nil && cfg.LimbusFolder != "" {
+		limbusExePath := filepath.Join(cfg.LimbusFolder, "LimbusCompany.exe")
+		injectorCfgPath := filepath.Join("./", "limbonia", "injector.cfg")
+		content := "exe=" + limbusExePath + "\n"
+		if err := os.WriteFile(injectorCfgPath, []byte(content), 0644); err != nil {
+			return fmt.Errorf("failed to write injector.cfg: %v", err)
+		}
+	}
+
 	cmd := exec.Command(injectorPath)
+	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_CONSOLE}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		return err
 	}
