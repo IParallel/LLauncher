@@ -88,11 +88,21 @@ func (a *LimboniaApp) DownloadLimbonia() error {
 		})
 		return err
 	}
+	err = a.DownloadUpdate(updater.INJECTOR_DOWNLOAD_URL, "./limbonia/injector.exe")
+	if err != nil {
+		runtime.LogError(a.ctx, err.Error())
+		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+			Title:   "Failed to download the injector",
+			Message: err.Error(),
+			Type:    runtime.ErrorDialog,
+		})
+		return err
+	}
 	err = a.DownloadUpdate(updater.LIMBONIA_DOWNLOAD_URL, "./limbonia/Limbonia.dll")
 	if err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-			Title:   "Failed to download the update",
+			Title:   "Failed to download Limbonia.dll",
 			Message: err.Error(),
 			Type:    runtime.ErrorDialog,
 		})

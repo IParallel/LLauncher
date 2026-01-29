@@ -3,6 +3,7 @@
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -147,27 +148,16 @@ func injectDLL(pid uint32, dllPath string) error {
 }
 
 func InjectLimbo() error {
+	injectorPath, _ := filepath.Abs(filepath.Join("./", "limbonia", "injector.exe"))
 
-	pid, err := FindProcessID("LimbusCompany.exe")
-	if err != nil {
-		fmt.Printf("FindProcessID failed: %v", err)
+	if _, err := os.Stat(injectorPath); err != nil {
 		return err
 	}
 
-	name, _ := filepath.Abs(filepath.Join("./", "Limbonia", "Limbonia.dll"))
-
-	fmt.Println(name)
-
-	if _, err := os.Stat(name); err != nil {
+	cmd := exec.Command(injectorPath)
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-
-	if err := injectDLL(pid, name); err != nil {
-		fmt.Printf("injectDLL failed: %v", err)
-		return err
-	}
-
-	fmt.Println("injectDLL success")
 
 	return nil
 }
