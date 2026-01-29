@@ -10,7 +10,8 @@ import (
 const (
 	UPDATE_URL               = "https://files.ibello.site/static/version.json"
 	LAUNCHER_DOWNLOAD_URL    = "https://files.ibello.site/static/LLauncher.exe"
-	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.site/static/Limbus-Dumper.dll"
+	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.site/static/Limbonia.dll"
+	INJECTOR_DOWNLOAD_URL    = "https://files.ibello.site/static/injector.exe"
 	BOT_DOWNLOAD_URL         = "https://files.ibello.site/static/BotQuixote.exe"
 	CURRENT_LAUNCHER_VERSION = "3.0.4"
 )
