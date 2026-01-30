@@ -13,7 +13,7 @@ const (
 	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.site/static/Limbonia.dll"
 	INJECTOR_DOWNLOAD_URL    = "https://files.ibello.site/static/Injector.exe"
 	BOT_DOWNLOAD_URL         = "https://files.ibello.site/static/BotQuixote.exe"
-	CURRENT_LAUNCHER_VERSION = "3.1.5"
+	CURRENT_LAUNCHER_VERSION = "3.2.1"
 )
 
 type UpdateResponse struct {
