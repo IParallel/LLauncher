@@ -1,40 +1,151 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 @custom-variant hover (&:hover);
+
+/* ── Limbus Company Palette ── */
 :root {
-    --button-border-color: rgb(66,36,4);
-    --button-border-color-hover: rgb(86,56,12);
+    /* Core brand colours — crimson-dominant, gold accent */
+    --lc-bg:            #080406;
+    --lc-panel:         #0e0508;
+    --lc-panel-light:   #160a0a;
+    --lc-border:        #4a1010;
+    --lc-border-hover:  #7a2020;
+    --lc-border-active: #a83030;
+    --lc-gold:          #d4a017;
+    --lc-gold-bright:   #f5cc30;
+    --lc-gold-dim:      #7a5c10;
+    --lc-cream:         #f5e0b0;
+    --lc-red:           #8b1a1a;
+    --lc-red-bright:    #e04040;
+    --lc-crimson:       #c0192a;
+    --lc-crimson-dim:   #6b0f18;
+    --lc-green:         #1e5c1e;
+    --lc-green-bright:  #42b542;
+    --lc-text:          #f0d8c0;
+    --lc-text-dim:      #b07060;
+    --lc-text-muted:    #6a3030;
+    --lc-shadow:        rgba(0,0,0,0.85);
+    --lc-glow-gold:     0 0 12px rgba(212,160,23,0.55);
+    --lc-glow-red:      0 0 14px rgba(192,25,42,0.7);
+
+    /* Button tokens kept for compat */
+    --button-border-color:       var(--lc-border);
+    --button-border-color-hover: var(--lc-border-hover);
 }
 
+/* ── Animations ── */
 @layer utilities {
     @keyframes breath {
-        0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-        }
-        50% {
-            transform: scale(1.05);
-            opacity: 0.9;
-        }
+        0%, 100% { transform: scale(1);    opacity: 1;   }
+        50%       { transform: scale(1.06); opacity: 0.85; }
+    }
+    .animate-breath { animation: breath 2s ease-in-out infinite; }
+
+    @keyframes flicker {
+        0%,100%  { opacity: 1;    }
+        48%      { opacity: 1;    }
+        50%      { opacity: 0.82; }
+        52%      { opacity: 1;    }
+        94%      { opacity: 1;    }
+        96%      { opacity: 0.75; }
+    }
+    .animate-flicker { animation: flicker 6s ease-in-out infinite; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0);   }
+    }
+    .animate-fadein { animation: fadeIn 0.35s ease both; }
+
+    @keyframes scanline {
+        from { background-position: 0 0; }
+        to   { background-position: 0 100%; }
     }
 
-    .animate-breath {
-        animation: breath 2s ease-in-out infinite;
+    /* Decorative ruled-paper / ledger-lines background */
+    .lc-bg-texture {
+        background-color: var(--lc-bg);
+        background-image:
+            repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent 23px,
+                rgba(180,20,30,0.04) 24px
+            ),
+            radial-gradient(ellipse at 50% 0%, rgba(120,15,20,0.22) 0%, transparent 70%);
+    }
+
+    /* Ornate corner brackets via outline  */
+    .lc-corner-tl::before,
+    .lc-corner-br::after {
+        content: "";
+        position: absolute;
+        width: 18px; height: 18px;
+        pointer-events: none;
+    }
+    .lc-corner-tl::before {
+        top: 4px; left: 4px;
+        border-top: 2px solid var(--lc-gold-dim);
+        border-left: 2px solid var(--lc-gold-dim);
+    }
+    .lc-corner-br::after {
+        bottom: 4px; right: 4px;
+        border-bottom: 2px solid var(--lc-gold-dim);
+        border-right:  2px solid var(--lc-gold-dim);
+    }
+
+    /* Subtle horizontal divider rule */
+    .lc-rule {
+        border: none;
+        border-top: 1px solid var(--lc-border);
+        box-shadow: 0 1px 0 rgba(192,25,42,0.12);
+    }
+
+    /* Version badge pill */
+    .lc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.18rem 0.7rem;
+        border: 1px solid var(--lc-border);
+        background: var(--lc-panel-light);
+        border-radius: 2px;
+        font-family: "MikoDacs", sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        color: var(--lc-text-dim);
+    }
+
+    /* Glowing separator line */
+    .lc-glow-line {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--lc-crimson-dim), var(--lc-gold-dim), var(--lc-crimson-dim), transparent);
+        box-shadow: 0 0 8px rgba(192,25,42,0.45);
     }
 }
 
+/* ── Fonts ── */
 @font-face {
     font-family: "MikoDacs";
-    src: local(""), url("assets/fonts/Mikodacs.woff2") format("woff");
+    src: local(""), url("assets/fonts/Mikodacs.woff2") format("woff2");
     font-weight: normal;
-    font-style: auto;
+    font-style: normal;
 }
 
+/* ── Base ── */
 html, body, #app {
     text-align: center;
-    color: white;
+    color: var(--lc-text);
     height: 100vh;
     overflow: hidden;
     margin: 0;
     box-sizing: border-box;
+    font-family: "MikoDacs", "Noto Sans", sans-serif;
 }
+
+/* thin custom scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--lc-panel); }
+::-webkit-scrollbar-thumb { background: var(--lc-crimson-dim); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--lc-border-hover); }
+

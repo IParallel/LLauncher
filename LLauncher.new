@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Beware the sussy thingies">
+
+    <!-- Open Graph tags for social media & Discord embeds -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="IBello's Place">
+    <meta property="og:description" content="Beware the sussy thingies">
+    <meta property="og:image" content="https://ibello.site/static/ishmael_main.webp">
+    <meta property="og:url" content="https://ibello.site">
+
+    <meta name="google-adsense-account" content="ca-pub-2258010889855696">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2258010889855696"
+     crossorigin="anonymous"></script>
+
+    <!-- Twitter Card tags for Discord & Twitter -->
+    <meta name="twitter:title" content="IBello's Place">
+    <meta name="twitter:description" content="Beware the sussy thingies">
+    <meta name="twitter:image" content="https://ibello.site/static/ishmael_main.webp">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Favicon (icon in browser and search results) -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBello's Place</title>
+
+    <!-- Google Fonts preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-TpuF_tvX.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-iNo44uMY.css">
+</head>
+<body>
+<div id="app"></div>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7b23e8175d124ea7adc810a08d3cc0d7","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

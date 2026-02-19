@@ -7,6 +7,7 @@ import (
 	"embed"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -15,7 +16,20 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+var ZIP_PASSWORD string
+
 func main() {
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		println("Error loading .env file:", err.Error())
+	}
+
+	updater.ZIP_PASSWORD = os.Getenv("ZIP_PASSWORD")
+
+	if updater.ZIP_PASSWORD == "" {
+		updater.ZIP_PASSWORD = ZIP_PASSWORD
+	}
 
 	if _, err := os.Stat("./LLauncher.old"); err == nil {
 		os.Remove("./LLauncher.old")
@@ -37,7 +51,7 @@ func main() {
 		go app.DownloadLauncher()
 	}
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		AlwaysOnTop:   true,
 		Title:         "LLauncher v" + updater.CURRENT_LAUNCHER_VERSION,
 		Width:         900,

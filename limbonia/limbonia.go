@@ -98,8 +98,7 @@ func (a *LimboniaApp) CheckLimboniaVersion() bool {
 }
 
 func (a *LimboniaApp) DownloadLimbonia() error {
-	err := os.Mkdir("./limbonia", 0750)
-	if err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.MkdirAll("./limbonia", 0750); err != nil {
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to create directory",
 			Message: err.Error(),
@@ -107,18 +106,7 @@ func (a *LimboniaApp) DownloadLimbonia() error {
 		})
 		return err
 	}
-	err = a.DownloadUpdate(updater.INJECTOR_DOWNLOAD_URL, "./limbonia/Injector.exe")
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-			Title:   "Failed to download the injector",
-			Message: err.Error(),
-			Type:    runtime.ErrorDialog,
-		})
-		return err
-	}
-	err = a.DownloadUpdate(updater.LIMBONIA_DOWNLOAD_URL, "./limbonia/Limbonia.dll")
-	if err != nil {
+	if err := a.DownloadAndExtract(updater.LIMBONIA_DOWNLOAD_URL, "./limbonia"); err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to download Limbonia.dll",
@@ -147,8 +135,7 @@ func (a *LimboniaApp) OpenBotQuixote() error {
 }
 
 func (a *LimboniaApp) DownloadBotQuixote() error {
-	err := os.Mkdir("./bot", 0750)
-	if err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.MkdirAll("./bot", 0750); err != nil {
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to create directory",
 			Message: err.Error(),
@@ -156,8 +143,7 @@ func (a *LimboniaApp) DownloadBotQuixote() error {
 		})
 		return err
 	}
-	err = a.DownloadUpdate(updater.BOT_DOWNLOAD_URL, "./bot/BotQuixote.exe")
-	if err != nil {
+	if err := a.DownloadAndExtract(updater.BOT_DOWNLOAD_URL, "./bot"); err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to download the update",
@@ -192,8 +178,7 @@ func (a *LimboniaApp) CheckForUpdate() (bool, error) {
 	}
 
 	if need {
-		err := a.DownloadUpdate(updater.LAUNCHER_DOWNLOAD_URL, "./LLauncher.exe")
-		if err != nil {
+		if err := a.DownloadAndExtract(updater.LAUNCHER_DOWNLOAD_URL, "."); err != nil {
 			runtime.LogError(a.ctx, err.Error())
 			runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 				Title:   "Failed to download LLauncher.exe",
@@ -206,8 +191,39 @@ func (a *LimboniaApp) CheckForUpdate() (bool, error) {
 	return true, nil
 }
 
-func (a *LimboniaApp) DownloadUpdate(url, dest string) error {
+// DownloadAndExtract downloads a password-protected zip from url and extracts
+// its contents into destDir, then removes the temporary zip file.
+// Progress/complete events are emitted using the URL's base filename as label.
+func (a *LimboniaApp) DownloadAndExtract(url, destDir string) error {
+	tmpFile, err := os.CreateTemp("", "llauncher-*.zip")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpPath)
 
+	label := filepath.Base(url) // e.g. "Limbonia.zip"
+	if err := a.downloadFile(url, tmpPath, label, false); err != nil {
+		return err
+	}
+	if err := updater.ExtractZipWithPassword(tmpPath, destDir, updater.ZIP_PASSWORD); err != nil {
+		return err
+	}
+	// Emit complete after successful extraction
+	runtime.EventsEmit(a.ctx, "download:complete", label)
+	return nil
+}
+
+// DownloadUpdate downloads a file from url to dest, emitting progress events
+// using dest as the label. Exposed to the Wails frontend.
+func (a *LimboniaApp) DownloadUpdate(url, dest string) error {
+	return a.downloadFile(url, dest, filepath.Base(dest), true)
+}
+
+// downloadFile is the internal implementation that accepts a custom label for events.
+// emitComplete controls whether download:complete is emitted at the end.
+func (a *LimboniaApp) downloadFile(url, dest, label string, emitComplete bool) error {
 	if a.downloading {
 		runtime.LogInfo(a.ctx, "Already downloading")
 		return nil
@@ -241,7 +257,7 @@ func (a *LimboniaApp) DownloadUpdate(url, dest string) error {
 
 			if time.Since(lastEmit) > 200*time.Millisecond {
 				percent := float64(downloaded) / float64(total) * 100
-				runtime.EventsEmit(a.ctx, "download:progress", int(percent))
+				runtime.EventsEmit(a.ctx, "download:progress", map[string]interface{}{"file": label, "percent": int(percent)})
 				lastEmit = time.Now()
 			}
 		}
@@ -253,6 +269,11 @@ func (a *LimboniaApp) DownloadUpdate(url, dest string) error {
 		}
 	}
 
-	runtime.EventsEmit(a.ctx, "download:complete", dest)
+	runtime.EventsEmit(a.ctx, "download:progress", map[string]interface{}{"file": label, "percent": 100})
+	// Note: download:complete for DownloadAndExtract callers is emitted after extraction.
+	// For direct DownloadUpdate calls, emit it here.
+	if emitComplete {
+		runtime.EventsEmit(a.ctx, "download:complete", label)
+	}
 	return nil
 }

@@ -10,6 +10,10 @@ export function CheckLimboniaVersion() {
   return window['go']['limbonia']['LimboniaApp']['CheckLimboniaVersion']();
 }
 
+export function DownloadAndExtract(arg1, arg2) {
+  return window['go']['limbonia']['LimboniaApp']['DownloadAndExtract'](arg1, arg2);
+}
+
 export function DownloadBotQuixote() {
   return window['go']['limbonia']['LimboniaApp']['DownloadBotQuixote']();
 }

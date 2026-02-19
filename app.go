@@ -81,20 +81,42 @@ func (a *App) OpenLimboniaFolder() error {
 }
 
 func (a *App) DownloadLauncher() error {
+	tmpFile, err := os.CreateTemp("", "llauncher-*.zip")
+	if err != nil {
+		return err
+	}
+	tmpZipPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpZipPath)
+
 	res, err := http.Get(updater.LAUNCHER_DOWNLOAD_URL)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
-	file, err := os.Create("LLauncher.new")
+	zipFile, err := os.Create(tmpZipPath)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(file, res.Body)
+	_, err = io.Copy(zipFile, res.Body)
+	zipFile.Close()
 	if err != nil {
 		return err
 	}
-	file.Close()
+
+	tmpDir, err := os.MkdirTemp("", "llauncher-extract-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if err := updater.ExtractZipWithPassword(tmpZipPath, tmpDir, updater.ZIP_PASSWORD); err != nil {
+		return err
+	}
+
+	if err := os.Rename(filepath.Join(tmpDir, "LLauncher.exe"), "./LLauncher.new"); err != nil {
+		return err
+	}
 
 	runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 		Type:    runtime.InfoDialog,

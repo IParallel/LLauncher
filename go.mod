@@ -3,7 +3,9 @@ module WailsTest
 go 1.24.0
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/wailsapp/wails/v2 v2.11.0
+	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9
 	golang.org/x/sys v0.30.0
 )
 

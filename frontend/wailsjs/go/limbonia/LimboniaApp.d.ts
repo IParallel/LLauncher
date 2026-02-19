@@ -8,6 +8,8 @@ export function CheckForUpdate():Promise<boolean>;
 
 export function CheckLimboniaVersion():Promise<boolean>;
 
+export function DownloadAndExtract(arg1:string,arg2:string):Promise<void>;
+
 export function DownloadBotQuixote():Promise<void>;
 
 export function DownloadLimbonia():Promise<void>;

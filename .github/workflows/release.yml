@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Wails app
         run: |
-          wails build -clean
+          wails build -clean -ldflags "-X main.ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}"
         env:
           CGO_ENABLED: 0
 
