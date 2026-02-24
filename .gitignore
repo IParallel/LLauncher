@@ -6,3 +6,8 @@ frontend/node_modules
 .idea
 config.json
 .env
+limbonia/Injector.exe
+limbonia/Limbonia.dll
+bot
+LLauncher.exe
+LLauncher.new
