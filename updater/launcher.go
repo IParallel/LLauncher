@@ -7,16 +7,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/yeka/zip"
 )
 
 const (
 	UPDATE_URL               = "https://files.ibello.cc/version.json"
-	LAUNCHER_DOWNLOAD_URL    = "https://files.ibello.cc/LLauncher.zip"
 	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.cc/Limbonia.zip"
 	BOT_DOWNLOAD_URL         = "https://files.ibello.cc/BotQuixote.zip"
-	CURRENT_LAUNCHER_VERSION = "4.1.0"
+	CURRENT_LAUNCHER_VERSION = "v4.1.2"
+	GITHUB_LATEST_URL        = "https://api.github.com/repos/IParallel/LLauncher/releases/latest"
 )
 
 var ZIP_PASSWORD = ""
@@ -27,14 +29,45 @@ type UpdateResponse struct {
 	BotVersion      string `json:"bot_version"`
 }
 
-func CheckForUpdate() (needsUpdate bool, err error) {
-	update := GetVersions()
+type githubRelease struct {
+	TagName string `json:"tag_name"`
+}
 
-	if update.LauncherVersion != CURRENT_LAUNCHER_VERSION {
-		return true, nil
+func LauncherDownloadURL() string {
+	if runtime.GOOS == "windows" {
+		return "https://files.ibello.cc/LLauncher.zip"
 	}
+	return "https://files.ibello.cc/LLauncherLinux.zip"
+}
 
-	return false, nil
+func GetLatestLauncherVersion() (string, error) {
+	req, err := http.NewRequest("GET", GITHUB_LATEST_URL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	var release githubRelease
+	if err := json.Unmarshal(body, &release); err != nil {
+		return "", err
+	}
+	return release.TagName, nil
+}
+
+func CheckForUpdate() (needsUpdate bool, err error) {
+	latest, err := GetLatestLauncherVersion()
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimPrefix(latest, "v") != strings.TrimPrefix(CURRENT_LAUNCHER_VERSION, "v"), nil
 }
 
 func GetVersions() UpdateResponse {

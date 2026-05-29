@@ -178,7 +178,7 @@ func (a *LimboniaApp) CheckForUpdate() (bool, error) {
 	}
 
 	if need {
-		if err := a.DownloadAndExtract(updater.LAUNCHER_DOWNLOAD_URL, "."); err != nil {
+		if err := a.DownloadAndExtract(updater.LauncherDownloadURL(), "."); err != nil {
 			runtime.LogError(a.ctx, err.Error())
 			runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 				Title:   "Failed to download LLauncher.exe",

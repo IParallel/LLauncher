@@ -89,7 +89,7 @@ func (a *App) DownloadLauncher() error {
 	tmpFile.Close()
 	defer os.Remove(tmpZipPath)
 
-	res, err := http.Get(updater.LAUNCHER_DOWNLOAD_URL)
+	res, err := http.Get(updater.LauncherDownloadURL())
 	if err != nil {
 		return err
 	}
