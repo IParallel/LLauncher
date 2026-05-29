@@ -30,6 +30,9 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	if exe, err := os.Executable(); err == nil {
+		os.Remove(exe + ".old")
+	}
 }
 
 func (a *App) InjectLimbonia() error {

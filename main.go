@@ -53,7 +53,7 @@ func main() {
 
 	err = wails.Run(&options.App{
 		AlwaysOnTop:   true,
-		Title:         "LLauncher v" + updater.CURRENT_LAUNCHER_VERSION,
+		Title:         "LLauncher " + updater.CURRENT_LAUNCHER_VERSION,
 		Width:         900,
 		Height:        500,
 		DisableResize: true,
