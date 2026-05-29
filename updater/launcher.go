@@ -16,6 +16,7 @@ import (
 const (
 	UPDATE_URL            = "https://files.ibello.cc/version.json"
 	LIMBONIA_DOWNLOAD_URL = "https://files.ibello.cc/Limbonia.zip"
+	WINHTTP_DOWNLOAD_URL  = "https://files.ibello.cc/winhttp.dll"
 	BOT_DOWNLOAD_URL      = "https://files.ibello.cc/BotQuixote.zip"
 	GITHUB_LATEST_URL     = "https://api.github.com/repos/IParallel/LLauncher/releases/latest"
 )
