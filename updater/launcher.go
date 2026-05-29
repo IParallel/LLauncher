@@ -35,9 +35,9 @@ type githubRelease struct {
 
 func LauncherDownloadURL() string {
 	if runtime.GOOS == "windows" {
-		return "https://files.ibello.cc/LLauncher.zip"
+		return "https://github.com/IParallel/LLauncher/releases/latest/download/LLauncher.exe"
 	}
-	return "https://files.ibello.cc/LLauncherLinux.zip"
+	return "https://github.com/IParallel/LLauncher/releases/latest/download/LLauncher-linux"
 }
 
 func GetLatestLauncherVersion() (string, error) {

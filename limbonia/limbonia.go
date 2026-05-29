@@ -177,18 +177,7 @@ func (a *LimboniaApp) CheckForUpdate() (bool, error) {
 		return false, err
 	}
 
-	if need {
-		if err := a.DownloadAndExtract(updater.LauncherDownloadURL(), "."); err != nil {
-			runtime.LogError(a.ctx, err.Error())
-			runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-				Title:   "Failed to download LLauncher.exe",
-				Message: err.Error(),
-				Type:    runtime.ErrorDialog,
-			})
-			return false, err
-		}
-	}
-	return true, nil
+	return need, nil
 }
 
 // DownloadAndExtract downloads a password-protected zip from url and extracts

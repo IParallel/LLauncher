@@ -81,40 +81,30 @@ func (a *App) OpenLimboniaFolder() error {
 }
 
 func (a *App) DownloadLauncher() error {
-	tmpFile, err := os.CreateTemp("", "llauncher-*.zip")
+	exePath, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	tmpZipPath := tmpFile.Name()
-	tmpFile.Close()
-	defer os.Remove(tmpZipPath)
 
 	res, err := http.Get(updater.LauncherDownloadURL())
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
-	zipFile, err := os.Create(tmpZipPath)
+
+	newPath := exePath + ".new"
+	f, err := os.Create(newPath)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(zipFile, res.Body)
-	zipFile.Close()
+	_, err = io.Copy(f, res.Body)
+	f.Close()
 	if err != nil {
+		os.Remove(newPath)
 		return err
 	}
 
-	tmpDir, err := os.MkdirTemp("", "llauncher-extract-*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	if err := updater.ExtractZipWithPassword(tmpZipPath, tmpDir, updater.ZIP_PASSWORD); err != nil {
-		return err
-	}
-
-	if err := os.Rename(filepath.Join(tmpDir, "LLauncher.exe"), "./LLauncher.new"); err != nil {
+	if err := os.Chmod(newPath, 0755); err != nil {
 		return err
 	}
 
@@ -125,9 +115,8 @@ func (a *App) DownloadLauncher() error {
 		Buttons: []string{"OK"},
 	})
 
-	os.Rename("./LLauncher.exe", "./LLauncher.old")
-	os.Rename("./LLauncher.new", "./LLauncher.exe")
-
+	os.Rename(exePath, exePath+".old")
+	os.Rename(newPath, exePath)
 	os.Exit(0)
 
 	return nil
