@@ -16,7 +16,7 @@ const (
 	LAUNCHER_DOWNLOAD_URL    = "https://files.ibello.cc/LLauncher.zip"
 	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.cc/Limbonia.zip"
 	BOT_DOWNLOAD_URL         = "https://files.ibello.cc/BotQuixote.zip"
-	CURRENT_LAUNCHER_VERSION = "4.0.0"
+	CURRENT_LAUNCHER_VERSION = "4.0.1:F1"
 )
 
 var ZIP_PASSWORD = ""
