@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	UPDATE_URL               = "https://files.ibello.cc/version.json"
-	LIMBONIA_DOWNLOAD_URL    = "https://files.ibello.cc/Limbonia.zip"
-	BOT_DOWNLOAD_URL         = "https://files.ibello.cc/BotQuixote.zip"
-	CURRENT_LAUNCHER_VERSION = "v4.1.2"
-	GITHUB_LATEST_URL        = "https://api.github.com/repos/IParallel/LLauncher/releases/latest"
+	UPDATE_URL            = "https://files.ibello.cc/version.json"
+	LIMBONIA_DOWNLOAD_URL = "https://files.ibello.cc/Limbonia.zip"
+	BOT_DOWNLOAD_URL      = "https://files.ibello.cc/BotQuixote.zip"
+	GITHUB_LATEST_URL     = "https://api.github.com/repos/IParallel/LLauncher/releases/latest"
 )
+
+var CURRENT_LAUNCHER_VERSION = "dev"
 
 var ZIP_PASSWORD = ""
 

@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Wails app
         run: |
-          wails build -clean -ldflags "-X main.ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}"
+          wails build -clean -ldflags "-X main.ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }} -X WailsTest/updater.CURRENT_LAUNCHER_VERSION=${{ github.ref_name }}"
         env:
           CGO_ENABLED: 0
 
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build Wails app
         run: |
-          wails build -clean -tags webkit2_41 -ldflags "-X main.ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}"
+          wails build -clean -tags webkit2_41 -ldflags "-X main.ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }} -X WailsTest/updater.CURRENT_LAUNCHER_VERSION=${{ github.ref_name }}"
         env:
           CGO_ENABLED: 1
 
