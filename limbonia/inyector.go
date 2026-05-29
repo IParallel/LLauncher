@@ -1,4 +1,6 @@
-﻿package limbonia
+//go:build windows
+
+package limbonia
 
 import (
 	"WailsTest/config"
