@@ -72,8 +72,11 @@ jobs:
         env:
           CGO_ENABLED: 1
 
+      - name: Rename binary
+        run: mv build/bin/LLauncher build/bin/LLauncher-linux
+
       - name: Upload Linux binary to release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/bin/*
+            build/bin/LLauncher-linux
