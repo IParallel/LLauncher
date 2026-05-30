@@ -45,8 +45,8 @@ func ensureDLLs(gameFolder string) error {
 			missing = append(missing, dll)
 		}
 	}
-	if len(missing) == 0 {
-		return nil
+	if len(missing) == 0 || !contains(missing, "Limbonia.dll") {
+		missing = append(missing, "Limbonia.dll")
 	}
 
 	// Try copying from local cache (./limbonia/) populated by the Update button
@@ -62,6 +62,15 @@ func ensureDLLs(gameFolder string) error {
 
 	// Fall back to downloading directly into the game folder
 	return downloadLimboniaDLLs(gameFolder)
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 func copyFile(src, dst string) error {

@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import {InjectLimbonia} from "../../wailsjs/go/main/App";
+import {InjectLimbonia, IsLinux, DeleteLimboniaDLL} from "../../wailsjs/go/main/App";
 import {EventsOn, LogError} from "../../wailsjs/runtime";
 import Lbutton from "./controls/lbutton.vue";
 import ProgressBar from "./controls/progressBar.vue";
@@ -20,6 +20,14 @@ const injectLimbo = async () => {
     toast.error(e);
   }
 }
+
+const isLinux = ref(false);
+
+onBeforeMount(async () => {
+  try {
+    isLinux.value = await IsLinux();
+  } catch (err) {}
+})
 
 
 // Track progress for each file by path
@@ -69,8 +77,22 @@ const updateFunc = async () => {
   }
 }
 
+const deleteLimbonia = async () => {
+  try {
+    if (appState.configState?.limbus_folder === "") {
+      toast.error("Please select Limbus Company executable in settings tab")
+      return;
+    }
+    await DeleteLimboniaDLL();
+    toast.success("Limbonia removed from game folder")
+  } catch (e: any) {
+    toast.error(e);
+  }
+}
+
 onBeforeMount(async () => {
   try {
+    isLinux.value = await IsLinux();
     if (appState.serverState?.limbo_version != appState.configState?.current_limbonia_version) {
       hasUpdate.value = true
     }
@@ -164,13 +186,24 @@ EventsOn("download:progress", (payload: any) => {
         <ProgressBar :value="progress" />
       </div>
 
-      
       <div class="action-row">
-        <div class="action-col" v-if="appState.configState?.current_limbonia_version">
+        <div class="action-col" v-if="isLinux || appState.configState?.current_limbonia_version">
           <lbutton :event-func="injectLimbo" button-text="Open" />
         </div>
         <div class="action-col">
           <lbutton :event-func="updateFunc" button-text="Update" />
+        </div>
+      </div>
+
+      <div class="action-row" v-if="isLinux">
+        <div class="action-col delete-col">
+          <button class="delete-btn" @click="deleteLimbonia">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Remove Limbonia</span>
+          </button>
         </div>
       </div>
 
@@ -345,5 +378,32 @@ EventsOn("download:progress", (payload: any) => {
 }
 .action-col {
   flex: 1;
+}
+.delete-col {
+  display: flex;
+  justify-content: center;
+}
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(139,26,26,0.15);
+  border: 1px solid var(--lc-red);
+  border-radius: 2px;
+  color: var(--lc-red-bright);
+  font-family: "MikoDacs", sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.delete-btn:hover {
+  background: rgba(139,26,26,0.3);
+  box-shadow: 0 0 10px rgba(139,26,26,0.4);
+}
+.delete-btn svg {
+  flex-shrink: 0;
 }
 </style>

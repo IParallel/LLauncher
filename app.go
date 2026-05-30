@@ -11,8 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -42,6 +44,32 @@ func (a *App) InjectLimbonia() error {
 		return err
 	}
 
+	return nil
+}
+
+func (a *App) IsLinux() bool {
+	return runtime.GOOS == "linux"
+}
+
+func (a *App) DeleteLimboniaDLL() error {
+	cfg := config.Get()
+	if cfg.LimbusFolder == "" {
+		return fmt.Errorf("Limbus folder not set")
+	}
+	dlls := []string{"Limbonia.dll", "winhttp.dll"}
+	var errs []string
+	for _, dll := range dlls {
+		dllPath := filepath.Join(cfg.LimbusFolder, dll)
+		if _, err := os.Stat(dllPath); os.IsNotExist(err) {
+			continue
+		}
+		if err := os.Remove(dllPath); err != nil {
+			errs = append(errs, dll+": "+err.Error())
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to delete: %s", strings.Join(errs, ", "))
+	}
 	return nil
 }
 
@@ -111,8 +139,8 @@ func (a *App) DownloadLauncher() error {
 		return err
 	}
 
-	runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-		Type:    runtime.InfoDialog,
+	wailsruntime.MessageDialog(a.ctx, wailsruntime.MessageDialogOptions{
+		Type:    wailsruntime.InfoDialog,
 		Title:   "New Update!",
 		Message: "Please restart to apply the update",
 		Buttons: []string{"OK"},
