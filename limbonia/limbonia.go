@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	goruntime "runtime"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -121,7 +122,15 @@ func (a *LimboniaApp) DownloadLimbonia() error {
 }
 
 func (a *LimboniaApp) OpenBotQuixote() error {
-	cmd := exec.Command("./bot/BotQuixote.exe")
+	binPath := "./bot/BotQuixote.exe"
+	if goruntime.GOOS != "windows" {
+		binPath = "./bot/BotQuixote"
+		// Extracted archive files don't keep the executable bit; restore it.
+		if err := os.Chmod(binPath, 0750); err != nil {
+			runtime.LogError(a.ctx, err.Error())
+		}
+	}
+	cmd := exec.Command(binPath)
 	if err := cmd.Start(); err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
@@ -143,7 +152,7 @@ func (a *LimboniaApp) DownloadBotQuixote() error {
 		})
 		return err
 	}
-	if err := a.DownloadAndExtract(updater.BOT_DOWNLOAD_URL, "./bot"); err != nil {
+	if err := a.DownloadAndExtract(updater.BotDownloadURL(), "./bot"); err != nil {
 		runtime.LogError(a.ctx, err.Error())
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to download the update",

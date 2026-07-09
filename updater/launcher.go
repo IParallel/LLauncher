@@ -17,7 +17,6 @@ const (
 	UPDATE_URL            = "https://files.ibello.cc/version.json"
 	LIMBONIA_DOWNLOAD_URL = "https://files.ibello.cc/Limbonia.zip"
 	WINHTTP_DOWNLOAD_URL  = "https://files.ibello.cc/winhttp.dll"
-	BOT_DOWNLOAD_URL      = "https://files.ibello.cc/BotQuixote.zip"
 	GITHUB_LATEST_URL     = "https://api.github.com/repos/IParallel/LLauncher/releases/latest"
 )
 
@@ -40,6 +39,15 @@ func LauncherDownloadURL() string {
 		return "https://github.com/IParallel/LLauncher/releases/latest/download/LLauncher.exe"
 	}
 	return "https://github.com/IParallel/LLauncher/releases/latest/download/LLauncher-linux"
+}
+
+// BotDownloadURL returns the BotQuixote archive URL for the current OS.
+// Linux users get a separate build packaged as BotQuixote-linux.zip.
+func BotDownloadURL() string {
+	if runtime.GOOS == "windows" {
+		return "https://files.ibello.cc/BotQuixote.zip"
+	}
+	return "https://files.ibello.cc/BotQuixote-linux.zip"
 }
 
 func GetLatestLauncherVersion() (string, error) {
