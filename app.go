@@ -113,13 +113,24 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
+// InjectLimbonia patches the game and then brings up the companion.
+//
+// Mephi ships in the same bundle as the DLL and the injector and is how a user
+// actually drives Limbonia, so Play means both. It was previously never started
+// at all — OpenMephi existed and nothing called it, which presented as "the
+// launcher does not open Mephi".
+//
+// Its failure is deliberately NOT this function's failure. The injection is the
+// part that had to work; the game is already patched by the time we get here, and
+// reporting an error would tell the user the thing that succeeded had failed.
+// OpenMephi surfaces its own problems, and the absent case is silent by design —
+// see OpenMephiIfInstalled.
 func (a *App) InjectLimbonia() error {
-	err := limbonia.InjectLimbo()
-
-	if err != nil {
+	if err := limbonia.InjectLimbo(); err != nil {
 		return err
 	}
 
+	_ = a.LimboniaApp.OpenMephiIfInstalled()
 	return nil
 }
 

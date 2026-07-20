@@ -227,13 +227,40 @@ func installClientBundle() error {
 	return updater.VerifyInstall(dir)
 }
 
-// OpenMephi launches the companion app that ships inside the client bundle.
-func (a *LimboniaApp) OpenMephi() error {
+// mephiPath is where the companion lives once the bundle is installed.
+//
+// The name differs by platform because the bundle ships both (windows/Mephi.exe
+// and linux/Mephi) and extraction keeps only the one this OS needs — see
+// updater/layout.go.
+func mephiPath() string {
 	name := "Mephi.exe"
 	if goruntime.GOOS != "windows" {
 		name = "Mephi"
 	}
-	binPath := filepath.Join(clientDir(), name)
+	return filepath.Join(clientDir(), name)
+}
+
+// OpenMephiIfInstalled launches Mephi when the installed bundle has it, and does
+// nothing at all when it does not.
+//
+// This is the PLAY path: Mephi is started after a successful injection, and a
+// user whose installed bundle predates Mephi must not be shown a dialog every
+// single time they launch the game. OpenMephi's "isn't installed yet" prompt is
+// right when somebody asks for Mephi directly and wrong as a side effect of
+// pressing Play, so the absent case is silent here.
+//
+// Anything else — present but unlaunchable — still reports, because that is a
+// real fault rather than an old install.
+func (a *LimboniaApp) OpenMephiIfInstalled() error {
+	if _, err := os.Stat(mephiPath()); err != nil {
+		return nil
+	}
+	return a.OpenMephi()
+}
+
+// OpenMephi launches the companion app that ships inside the client bundle.
+func (a *LimboniaApp) OpenMephi() error {
+	binPath := mephiPath()
 
 	if goruntime.GOOS != "windows" {
 		// Extraction already sets this for anything under linux/ (and for any entry
