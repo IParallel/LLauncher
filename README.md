@@ -42,6 +42,44 @@
  - `frontend/` — Vue + Vite frontend. Build scripts live in `frontend/package.json`.
  - `build/` — output for built assets and platform binaries.
 
+ ## Client bundle layout (`Limbonia.zip`)
+
+ One `Limbonia.zip` carries every platform's files. The launcher extracts only what the
+ running OS needs; the rest is skipped and never written to disk.
+
+ Zip it with these top-level directories:
+
+ ```
+ common/    Limbonia.dll
+ windows/   Injector.exe
+            Mephi.exe
+ linux/     Mephi
+ ```
+
+ Rules the extractor follows:
+
+ - **The directory decides, not the file extension.** `common/`, `windows/`, `linux/` and
+   `darwin/` are the recognised names, matched case-insensitively. Nothing sniffs suffixes,
+   so a Linux binary may be named anything and a shared data file ending in `.dll` still
+   goes where the packager put it.
+ - **Only the top level counts.** `extras/windows/thing.exe` is not a Windows entry.
+ - **Anything else is common.** An entry that is not under a recognised platform directory —
+   including an entry at the archive root — is installed on every platform. This is what
+   keeps the older *flat* bundles (`Limbonia.dll` and `Injector.exe` at the root, no
+   directories) installing correctly, so re-uploading is not required to adopt this layout.
+ - **Directories are packaging only.** Everything is flattened to its base name on install;
+   nothing lands in a `common/` subfolder on disk.
+ - **Linux binaries are made executable** (`0755`) on extraction — zip mode bits do not
+   survive extraction on their own.
+
+ Everything installs to `<launcher dir>/limbonia/` on **both** platforms. On Linux the
+ launcher then copies `Limbonia.dll` and `winhttp.dll` from there into the Steam game
+ folder; the bundle itself is never extracted into the game folder, because Mephi finds the
+ launcher's `config.json` by looking at its own parent directory and cannot do so from
+ `steamapps/common/Limbus Company/`.
+
+ `winhttp.dll` is **not** part of the bundle — it is downloaded separately on Linux.
+
  ## Development
 
  There are two common modes during development:

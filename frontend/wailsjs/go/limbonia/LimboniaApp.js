@@ -10,20 +10,12 @@ export function CheckLimboniaVersion() {
   return window['go']['limbonia']['LimboniaApp']['CheckLimboniaVersion']();
 }
 
-export function DownloadAndExtract(arg1, arg2) {
-  return window['go']['limbonia']['LimboniaApp']['DownloadAndExtract'](arg1, arg2);
-}
-
-export function DownloadBotQuixote() {
-  return window['go']['limbonia']['LimboniaApp']['DownloadBotQuixote']();
-}
-
 export function DownloadLimbonia() {
   return window['go']['limbonia']['LimboniaApp']['DownloadLimbonia']();
 }
 
-export function DownloadUpdate(arg1, arg2) {
-  return window['go']['limbonia']['LimboniaApp']['DownloadUpdate'](arg1, arg2);
+export function GetChangelog() {
+  return window['go']['limbonia']['LimboniaApp']['GetChangelog']();
 }
 
 export function GetConfig() {
@@ -34,12 +26,12 @@ export function GetServerVersion() {
   return window['go']['limbonia']['LimboniaApp']['GetServerVersion']();
 }
 
-export function OpenBotQuixote() {
-  return window['go']['limbonia']['LimboniaApp']['OpenBotQuixote']();
-}
-
 export function OpenFileDialog() {
   return window['go']['limbonia']['LimboniaApp']['OpenFileDialog']();
+}
+
+export function OpenMephi() {
+  return window['go']['limbonia']['LimboniaApp']['OpenMephi']();
 }
 
 export function Startup(arg1) {

@@ -18,6 +18,14 @@ export function IsLinux() {
   return window['go']['main']['App']['IsLinux']();
 }
 
+export function LauncherUpdateState() {
+  return window['go']['main']['App']['LauncherUpdateState']();
+}
+
+export function LauncherVersion() {
+  return window['go']['main']['App']['LauncherVersion']();
+}
+
 export function OpenLimboniaFolder() {
   return window['go']['main']['App']['OpenLimboniaFolder']();
 }
@@ -28,4 +36,8 @@ export function OpenLimbusFolder() {
 
 export function OpenSettingsFolder() {
   return window['go']['main']['App']['OpenSettingsFolder']();
+}
+
+export function RestartLauncher() {
+  return window['go']['main']['App']['RestartLauncher']();
 }

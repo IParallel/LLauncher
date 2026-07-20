@@ -3,12 +3,27 @@ const props = defineProps({
   buttonText: { type: String, default: "ButtonText" },
   eventFunc:  { type: Function, default: null },
 })
+
+// Await the handler so a rejected Go call can't become an unhandled promise
+// rejection. Previously `eventFunc()` was fired and dropped, which meant any
+// error returned by the Go side vanished silently and the button looked dead.
+//
+// Callers that want to SHOW the error should catch it themselves (see
+// Settings.vue); this is the last-resort net so nothing is lost entirely.
+async function invoke() {
+  if (!props.eventFunc) return
+  try {
+    await props.eventFunc()
+  } catch (e) {
+    console.error(`[${props.buttonText}]`, e)
+  }
+}
 </script>
 
 <template>
   <button
       draggable="false"
-      @click="eventFunc && eventFunc()"
+      @click="invoke"
       class="lc-btn group relative overflow-hidden"
   >
     <!-- Background shimmer on hover -->

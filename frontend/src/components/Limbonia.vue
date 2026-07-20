@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {InjectLimbonia, IsLinux, DeleteLimboniaDLL} from "../../wailsjs/go/main/App";
 import {EventsOn, LogError} from "../../wailsjs/runtime";
 import Lbutton from "./controls/lbutton.vue";
@@ -15,7 +15,7 @@ const injectLimbo = async () => {
       return;
     }
     await InjectLimbonia();
-    toast.success("Limbonia injecting...")
+    toast.success("Starting Mephi...")
   } catch (e: any) {
     toast.error(e);
   }
@@ -54,7 +54,7 @@ const resetDownload = async () => {
   downloadingFile.value = ""
   downloading.value = false
   await appState.update()
-  if (appState.serverState?.limbo_version == appState.configState?.current_limbonia_version) {
+  if (appState.serverState?.client_version == appState.configState?.current_client_version) {
     hasUpdate.value = false
   }
 }
@@ -84,7 +84,7 @@ const deleteLimbonia = async () => {
       return;
     }
     await DeleteLimboniaDLL();
-    toast.success("Limbonia removed from game folder")
+    toast.success("Mephi removed from game folder")
   } catch (e: any) {
     toast.error(e);
   }
@@ -93,7 +93,7 @@ const deleteLimbonia = async () => {
 onBeforeMount(async () => {
   try {
     isLinux.value = await IsLinux();
-    if (appState.serverState?.limbo_version != appState.configState?.current_limbonia_version) {
+    if (appState.serverState?.client_version != appState.configState?.current_client_version) {
       hasUpdate.value = true
     }
   } catch (err) {}
@@ -102,7 +102,7 @@ onBeforeMount(async () => {
 const checkInterval = setInterval(async () => {
   if (downloading.value) return;
   await appState.update()
-  hasUpdate.value = appState.serverState?.limbo_version != appState.configState?.current_limbonia_version
+  hasUpdate.value = appState.serverState?.client_version != appState.configState?.current_client_version
 }, 10_000)
 
 onUnmounted(() => clearInterval(checkInterval))
@@ -140,12 +140,12 @@ EventsOn("download:progress", (payload: any) => {
       
       <div class="card-header">
         <div class="header-rule-left"></div>
-        <span class="header-title">Limbonia</span>
+        <span class="header-title">Mephi</span>
         <div class="header-rule-right"></div>
       </div>
 
       
-      <p class="page-desc">Cheat menu to customize the limbussy experience</p>
+      <p class="page-desc">Cheat menu and Mirror Dungeon bot for the limbussy experience</p>
 
       
       <div class="version-grid">
@@ -153,9 +153,9 @@ EventsOn("download:progress", (payload: any) => {
           <span class="version-label">Installed Version</span>
           <span
             class="version-value"
-            :class="appState.configState?.current_limbonia_version ? 'is-ok' : 'is-err'"
+            :class="appState.configState?.current_client_version ? 'is-ok' : 'is-err'"
           >
-            {{ appState.configState?.current_limbonia_version === "" ? "None" : (appState.configState?.current_limbonia_version ?? "—") }}
+            {{ appState.configState?.current_client_version === "" ? "None" : (appState.configState?.current_client_version ?? "—") }}
           </span>
         </div>
 
@@ -167,7 +167,7 @@ EventsOn("download:progress", (payload: any) => {
             class="version-value"
             :class="appState.serverState ? 'is-ok' : 'is-err'"
           >
-            {{ appState.serverState?.limbo_version ?? "Error" }}
+            {{ appState.serverState?.client_version ?? "Error" }}
           </span>
         </div>
 
@@ -187,7 +187,7 @@ EventsOn("download:progress", (payload: any) => {
       </div>
 
       <div class="action-row">
-        <div class="action-col" v-if="isLinux || appState.configState?.current_limbonia_version">
+        <div class="action-col" v-if="isLinux || appState.configState?.current_client_version">
           <lbutton :event-func="injectLimbo" button-text="Open" />
         </div>
         <div class="action-col">
@@ -202,7 +202,7 @@ EventsOn("download:progress", (payload: any) => {
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            <span>Remove Limbonia</span>
+            <span>Remove Mephi</span>
           </button>
         </div>
       </div>
@@ -248,9 +248,9 @@ EventsOn("download:progress", (payload: any) => {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  width: min(480px, 90%);
-  padding: 1.8rem 2rem;
+  gap: 0.9rem;
+  width: min(400px, 92%);
+  padding: 1.3rem 1.5rem;
   background: linear-gradient(160deg, rgba(18,6,6,0.97) 0%, rgba(10,3,3,0.97) 100%);
   border: 1px solid var(--lc-border);
   border-radius: 2px;

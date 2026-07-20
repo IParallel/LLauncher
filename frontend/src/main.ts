@@ -4,13 +4,11 @@ import './style.css';
 
 import {createRouter, createWebHashHistory} from "vue-router";
 import Limbonia from "./components/Limbonia.vue";
-import BotQuixote from "./components/BotQuixote.vue";
 import Settings from "./components/Settings.vue";
 import {createPinia} from "pinia";
 import {useLauncherVersion} from "./stores";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
-import Help from "./components/Help.vue";
 
 const routes = [
     {
@@ -18,17 +16,9 @@ const routes = [
         component: Limbonia,
     },
     {
-        path: "/bot-quixote",
-        component: BotQuixote,
-    },
-    {
         path: '/settings',
         component: Settings,
     },
-    {
-        path: '/help',
-        component: Help,
-    }
 ]
 
 const router = createRouter({

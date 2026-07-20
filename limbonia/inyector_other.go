@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,40 +36,49 @@ func InjectLimbo() error {
 	return exec.Command("xdg-open", "steam://rungameid/"+limbusAppID).Start()
 }
 
+// ensureDLLs puts the DLLs the Wine-side game loads into the game folder.
+//
+// The client bundle is NOT extracted into the game folder any more. It installs
+// to clientDir() on every platform, and the two DLLs the game needs are copied
+// across from there. That split matters beyond tidiness: Mephi locates the
+// launcher's config.json by looking at its own parent directory and reads
+// current_client_version from it, so a Mephi binary dropped into
+// steamapps/common/Limbus Company/ has no config.json above it and can never
+// tell that an update exists.
+//
+// Limbonia.dll is always re-copied rather than skipped when present, so an
+// updated bundle actually reaches the game folder instead of leaving a stale
+// build in place.
 func ensureDLLs(gameFolder string) error {
-	dlls := []string{"winhttp.dll", "Limbonia.dll"}
-	var missing []string
-	for _, dll := range dlls {
-		if _, err := os.Stat(filepath.Join(gameFolder, dll)); err != nil {
-			missing = append(missing, dll)
+	cache := clientDir()
+
+	// winhttp.dll is not part of the client bundle — it ships on its own — so it
+	// is only fetched when the cache does not already have it.
+	if _, err := os.Stat(filepath.Join(cache, "winhttp.dll")); err != nil {
+		if err := os.MkdirAll(cache, 0750); err != nil {
+			return err
+		}
+		if err := downloadToFile(updater.WINHTTP_DOWNLOAD_URL, filepath.Join(cache, "winhttp.dll")); err != nil {
+			return fmt.Errorf("couldn't download winhttp.dll: %w", err)
 		}
 	}
-	if len(missing) == 0 || !contains(missing, "Limbonia.dll") {
-		missing = append(missing, "Limbonia.dll")
-	}
 
-	// Try copying from local cache (./limbonia/) populated by the Update button
-	allCopied := true
-	for _, dll := range missing {
-		if err := copyFile(filepath.Join(".", "limbonia", dll), filepath.Join(gameFolder, dll)); err != nil {
-			allCopied = false
+	// A missing Limbonia.dll means the bundle was never installed (or was
+	// installed by an older launcher straight into the game folder). Install it
+	// through the signed manifest — never by fetching a bare URL.
+	if _, err := os.Stat(filepath.Join(cache, "Limbonia.dll")); err != nil {
+		if err := installClientBundle(); err != nil {
+			return err
 		}
 	}
-	if allCopied {
-		return nil
-	}
 
-	// Fall back to downloading directly into the game folder
-	return downloadLimboniaDLLs(gameFolder)
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
+	for _, dll := range []string{"winhttp.dll", "Limbonia.dll"} {
+		src := filepath.Join(cache, dll)
+		if err := copyFile(src, filepath.Join(gameFolder, dll)); err != nil {
+			return fmt.Errorf("couldn't copy %s into the game folder: %w", dll, err)
 		}
 	}
-	return false
+	return nil
 }
 
 func copyFile(src, dst string) error {
@@ -84,52 +92,19 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	defer out.Close()
-	_, err = io.Copy(out, in)
-	return err
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	// Closed explicitly: a deferred Close drops its error, and a short write
+	// flushed at close would leave a truncated Limbonia.dll in the game folder
+	// that the game then tries to load.
+	return out.Close()
 }
 
-func downloadLimboniaDLLs(destDir string) error {
-	// Download Limbonia.zip and extract
-	res, err := http.Get(updater.LIMBONIA_DOWNLOAD_URL)
-	if err != nil {
-		return fmt.Errorf("failed to download Limbonia: %w", err)
-	}
-	defer res.Body.Close()
-
-	tmp, err := os.CreateTemp("", "limbonia-*.zip")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if _, err = io.Copy(tmp, res.Body); err != nil {
-		tmp.Close()
-		return err
-	}
-	tmp.Close()
-
-	if err := updater.ExtractZipWithPassword(tmpPath, destDir, updater.ZIP_PASSWORD); err != nil {
-		return err
-	}
-
-	// Download winhttp.dll directly
-	return downloadFile(updater.WINHTTP_DOWNLOAD_URL, filepath.Join(destDir, "winhttp.dll"))
-}
-
-func downloadFile(url, dest string) error {
-	res, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to download %s: %w", url, err)
-	}
-	defer res.Body.Close()
-	f, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, res.Body)
-	return err
-}
+// downloadLimboniaDLLs was removed: the bundle install now goes through
+// installClientBundle() in limbonia.go, which is the same signed-manifest and
+// hash-checked path the Update button uses, extracting to clientDir() rather
+// than into the game folder.
 
 // setSteamLaunchOption reads the Steam localconfig.vdf, patches the LaunchOptions
 // for appID, and writes it back.

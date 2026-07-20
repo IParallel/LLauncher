@@ -151,16 +151,20 @@ func injectDLL(pid uint32, dllPath string) error {
 }
 
 func InjectLimbo() error {
-	injectorPath, _ := filepath.Abs(filepath.Join("./", "limbonia", "Injector.exe"))
+	// Resolved against the launcher's own directory, matching where the bundle is
+	// installed. The old "./limbonia" was relative to the working directory,
+	// which is not the install directory when the launcher starts from a shortcut
+	// or from Steam.
+	injectorPath := filepath.Join(clientDir(), "Injector.exe")
 
 	if _, err := os.Stat(injectorPath); err != nil {
-		return err
+		return fmt.Errorf("Injector.exe isn't installed — run the update first: %w", err)
 	}
 
 	cfg := config.Get()
 	if cfg != nil && cfg.LimbusFolder != "" {
 		limbusExePath := filepath.Join(cfg.LimbusFolder, "LimbusCompany.exe")
-		injectorCfgPath := filepath.Join("./", "limbonia", "injector.cfg")
+		injectorCfgPath := filepath.Join(clientDir(), "injector.cfg")
 		content := "exe=" + limbusExePath + "\n"
 		if err := os.WriteFile(injectorCfgPath, []byte(content), 0644); err != nil {
 			return fmt.Errorf("failed to write injector.cfg: %v", err)
@@ -168,6 +172,10 @@ func InjectLimbo() error {
 	}
 
 	cmd := exec.Command(injectorPath)
+	// injector.cfg is written into clientDir(), so the injector has to run there
+	// to find it — the launcher's working directory is not reliably the install
+	// directory. OpenMephi already does the same for Mephi.
+	cmd.Dir = clientDir()
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_CONSOLE}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

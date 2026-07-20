@@ -40,9 +40,9 @@
           <span>Folder Shortcuts</span>
         </div>
         <div class="shortcut-grid">
-          <Lbutton button-text="App Folder"           :event-func="OpenSettingsFolder" />
-          <Lbutton button-text="Limbus Company Folder" :event-func="OpenLimbusFolder" />
-          <Lbutton button-text="Limbonia Config Folder" :event-func="OpenLimboniaFolder" />
+          <Lbutton button-text="App Folder"            :event-func="reveal(OpenSettingsFolder)" />
+          <Lbutton button-text="Limbus Company Folder" :event-func="reveal(OpenLimbusFolder)" />
+          <Lbutton button-text="Mephi Settings Folder" :event-func="reveal(OpenLimboniaFolder)" />
         </div>
       </div>
 
@@ -59,6 +59,22 @@ import { OpenLimboniaFolder, OpenLimbusFolder, OpenSettingsFolder } from "../../
 
 const appState = useLauncherVersion()
 const toast = useToast()
+
+// Surface why a folder shortcut didn't open.
+//
+// These calls fail for ordinary, fixable reasons — no Limbus folder chosen yet,
+// or Limbonia hasn't written its settings because the game has never run with it.
+// The Go side returns a plain-language reason for each; without this wrapper the
+// promise was dropped on the floor and the button simply appeared to do nothing.
+function reveal(open: () => Promise<void>) {
+  return async () => {
+    try {
+      await open()
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e ?? "Couldn't open that folder"))
+    }
+  }
+}
 
 const findLimbusFolder = async () => {
   try {
@@ -86,9 +102,9 @@ const findLimbusFolder = async () => {
 .page-card {
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
-  width: min(520px, 100%);
-  padding: 1.8rem 2rem;
+  gap: 1rem;
+  width: min(420px, 100%);
+  padding: 1.3rem 1.5rem;
   background: linear-gradient(160deg, rgba(18,6,6,0.97) 0%, rgba(10,3,3,0.97) 100%);
   border: 1px solid var(--lc-border);
   border-radius: 2px;
