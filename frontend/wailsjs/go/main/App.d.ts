@@ -8,6 +8,8 @@ export function DownloadLauncher():Promise<void>;
 
 export function InjectLimbonia():Promise<void>;
 
+export function IsGameRunning():Promise<boolean>;
+
 export function IsLinux():Promise<boolean>;
 
 export function LauncherUpdateState():Promise<main.LauncherUpdate>;

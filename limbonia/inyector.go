@@ -6,7 +6,6 @@ import (
 	"WailsTest/config"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -171,16 +170,16 @@ func InjectLimbo() error {
 		}
 	}
 
-	cmd := exec.Command(injectorPath)
+	// Elevated, and started through the shell rather than os/exec: writing into
+	// another process's address space fails without administrator rights whenever
+	// the game itself is elevated, and that failure surfaces as a bare
+	// "OpenProcess: access denied" with nothing pointing at the cause.
+	//
 	// injector.cfg is written into clientDir(), so the injector has to run there
 	// to find it — the launcher's working directory is not reliably the install
-	// directory. OpenMephi already does the same for Mephi.
-	cmd.Dir = clientDir()
-	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_CONSOLE}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		return err
+	// directory. OpenMephi does the same for Mephi.
+	if _, err := launchElevated(injectorPath, clientDir()); err != nil {
+		return elevationRefused("The injector", err)
 	}
 
 	return nil

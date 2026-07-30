@@ -6,6 +6,7 @@ import (
 	"WailsTest/limbonia"
 	"WailsTest/updater"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,8 +16,21 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+const (
+	// mephiPollInterval is how often the launcher re-checks for a companion it
+	// has no process handle for. Slow on purpose: it walks the process table, and
+	// the only thing waiting on the answer is a window coming back.
+	mephiPollInterval = 2 * time.Second
+
+	// mephiAppearWindow is how long a companion started without a usable handle
+	// is given to show up in the process table before its absence is believed.
+	mephiAppearWindow = 15 * time.Second
 )
 
 // App struct
@@ -29,6 +43,91 @@ type App struct {
 	// restartPath is the launcher's own path once a downloaded update has been
 	// swapped into place — i.e. what to execute to come back up on the new build.
 	restartPath string
+
+	// tray is nil when the notification area is unavailable (any non-Windows
+	// build, or a failed registration). Nil means "never hide the window".
+	tray *trayIcon
+	// presence is the hide-to-tray state machine, built in startup() once the
+	// Wails context and the tray both exist.
+	presence *presence
+	// mephiWatch guards against two Play presses leaving two watchers racing to
+	// restore the window.
+	mephiWatch atomic.Bool
+	// quitting is set once the launcher has decided to close. It exists so a
+	// watcher that finishes mid-shutdown can't put the window back up.
+	quitting atomic.Bool
+
+	mephiPoll   time.Duration
+	mephiAppear time.Duration
+
+	// The things Play actually does, held as indirections so the launch decision
+	// and the shutdown-on-refusal can be exercised without a game, an injector, a
+	// UAC prompt or a live Wails runtime. NewApp wires the real ones.
+	injectFn        func() error
+	openMephiFn     func() error
+	mephiRunningFn  func() bool
+	limbusRunningFn func() bool
+	quitFn          func()
+}
+
+// presence is the launcher's hide-to-tray state machine.
+//
+// Kept apart from the Win32 and Wails calls it drives, because the ordering below
+// is the part that can actually be got wrong, and it is not observable in a build
+// that needs a notification area and a live window to run at all.
+type presence struct {
+	mu     sync.Mutex
+	hidden bool
+
+	trayShow   func() bool
+	trayHide   func()
+	windowHide func()
+	windowShow func()
+}
+
+// hide puts the icon up and the window away, reporting whether it went.
+//
+// The order is load-bearing: the icon goes up FIRST and the window only follows
+// if that worked. A hidden window with no icon to bring it back is a process the
+// user can only reach through Task Manager, so a tray that won't appear means the
+// launcher stays visible instead.
+func (p *presence) hide() bool {
+	if p == nil {
+		return false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.hidden {
+		return true
+	}
+	if !p.trayShow() {
+		return false
+	}
+	p.windowHide()
+	p.hidden = true
+	return true
+}
+
+// restore brings the window back and takes the icon down.
+//
+// Idempotent, and deliberately a no-op when the window was never hidden: the
+// companion exiting and the tray's own Show item both land here, and a user who
+// already asked for the window back must not have it yanked to the front a second
+// time when Mephi later closes.
+func (p *presence) restore() {
+	if p == nil {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.hidden {
+		return
+	}
+	p.windowShow()
+	p.trayHide()
+	p.hidden = false
 }
 
 // LauncherUpdate is the self-update state shown in the status bar.
@@ -101,15 +200,196 @@ func (a *App) RestartLauncher() error {
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{
-		LimboniaApp: limbonia.NewApp(),
+	limboniaApp := limbonia.NewApp()
+	a := &App{
+		LimboniaApp:     limboniaApp,
+		mephiPoll:       mephiPollInterval,
+		mephiAppear:     mephiAppearWindow,
+		injectFn:        limbonia.InjectLimbo,
+		openMephiFn:     limboniaApp.OpenMephiIfInstalled,
+		mephiRunningFn:  limbonia.IsMephiRunning,
+		limbusRunningFn: limbonia.IsLimbusRunning,
 	}
+	// Wired after construction because it is one of the App's own methods.
+	a.quitFn = a.quit
+	return a
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	if exe, err := os.Executable(); err == nil {
 		os.Remove(exe + ".old")
+	}
+
+	// Built up front, with no icon shown yet, so that whether hiding is even
+	// possible is known before anything tries it. The icon only appears while the
+	// launcher is actually away.
+	a.tray = newTray("LLauncher", a.showWindow, a.quit)
+	a.presence = &presence{
+		// Method values on a nil *trayIcon are fine — the methods guard for it —
+		// so a build with no notification area simply never manages to hide.
+		trayShow:   a.tray.show,
+		trayHide:   a.tray.hide,
+		windowHide: func() { wailsruntime.WindowHide(a.ctx) },
+		windowShow: func() {
+			wailsruntime.WindowShow(a.ctx)
+			// Unminimise too: a window minimised before it was hidden comes back
+			// still minimised, which looks exactly like nothing happening.
+			wailsruntime.WindowUnminimise(a.ctx)
+		},
+	}
+
+	// Mephi is spawned down in the limbonia package; this is how the launcher
+	// hears about it so it can get out of the way.
+	a.LimboniaApp.OnMephiStarted = a.mephiStarted
+}
+
+// shutdown removes the tray icon before the process goes away.
+func (a *App) shutdown(ctx context.Context) {
+	a.tray.destroy()
+}
+
+// mephiStarted hides the launcher for as long as the companion is up.
+//
+// The launcher's whole job is over once Mephi is running — leaving a second
+// window in the taskbar is just clutter — but it has to still be there when Mephi
+// closes, so it goes to the tray rather than exiting.
+func (a *App) mephiStarted(p *limbonia.LaunchedProcess) {
+	// Nothing gets hidden on the way out — a window that vanishes into a tray icon
+	// the shutdown is about to delete is a window nobody can get back.
+	if a.quitting.Load() || !a.presence.hide() {
+		return
+	}
+	go a.watchMephi(p)
+}
+
+// showWindow is the tray menu's Show, and what the watcher calls when the
+// companion is gone.
+func (a *App) showWindow() {
+	// A watcher finishing while the launcher is on its way out must not put the
+	// window back up mid-shutdown.
+	if a.quitting.Load() {
+		return
+	}
+	a.presence.restore()
+}
+
+// quit is the tray menu's Exit.
+func (a *App) quit() {
+	if a.ctx == nil {
+		return
+	}
+	wailsruntime.Quit(a.ctx)
+}
+
+// declineShutdown closes the launcher after the user refused an elevation prompt.
+//
+// Refusing the prompt is a decision about the whole session, not about one
+// button: neither the injector nor the companion can do anything useful
+// unelevated, so a launcher left sitting there afterwards is a window with no
+// working action in it.
+//
+// Nothing is shown on the way out. The only thing there is to report is the
+// answer the user just gave to a dialog of their own, and a modal asking them to
+// acknowledge it would have to be dismissed before the shutdown could continue —
+// a prompt nobody clicks is a launcher that never closes. The rejected promise
+// still reaches the frontend, so the toast fires if it wins the race.
+func (a *App) declineShutdown() {
+	// Once only: the injector and the companion are launched back to back and a
+	// single "No" can come back declined from both.
+	if !a.quitting.CompareAndSwap(false, true) {
+		return
+	}
+
+	// Straight to the state machine rather than through showWindow, whose guard
+	// has just been armed. Shutting down from behind a tray icon would leave the
+	// window hidden and the icon lingering until something made Windows notice it
+	// had no owner.
+	a.presence.restore()
+
+	if a.quitFn != nil {
+		a.quitFn()
+	}
+}
+
+// reportOrQuit closes the launcher when err is a refused elevation prompt, and
+// hands every other failure straight back.
+//
+// A genuine fault — a missing Injector.exe, a blocked executable — is something
+// the user may well be able to fix from the window that is still open, so only
+// the deliberate refusal is fatal.
+func (a *App) reportOrQuit(err error) error {
+	if errors.Is(err, limbonia.ErrElevationCancelled) {
+		a.declineShutdown()
+	}
+	return err
+}
+
+// mephiRunning asks whichever process lookup this App was built with.
+func (a *App) mephiRunning() bool {
+	if a.mephiRunningFn == nil {
+		return false
+	}
+	return a.mephiRunningFn()
+}
+
+// limbusRunning reports whether the game is open.
+//
+// Missing wiring answers "not running" so an unwired launcher fails on the thing
+// it actually cannot do, rather than blocking Open with a reason that isn't true.
+func (a *App) limbusRunning() bool {
+	if a.limbusRunningFn == nil {
+		return false
+	}
+	return a.limbusRunningFn()
+}
+
+// IsGameRunning lets the frontend grey the Open button out while the game is up.
+//
+// Advisory only — the refusal in InjectLimbonia is the real one. This is polled,
+// so it is always a little stale, and a UI check on its own would let a game
+// started in the last second through.
+func (a *App) IsGameRunning() bool {
+	return a.limbusRunning()
+}
+
+func (a *App) watchMephi(p *limbonia.LaunchedProcess) {
+	a.watchUntilGone(p.CanWait(), p.Wait)
+}
+
+// watchUntilGone restores the launcher once the companion is gone.
+//
+// The process handle from the elevated launch is the reliable signal, but it is
+// not always there — the shell can decline to hand one back — and it says nothing
+// about a Mephi that was already running when the launcher started. So the handle
+// wait, when there is one, is followed by polling on the image name until nothing
+// answers to it. Being fooled by a second copy started elsewhere is the safe
+// direction to be wrong in: the launcher stays hidden a little longer, rather
+// than popping up over a companion that is still in use.
+//
+// Split from watchMephi on its wait so a test can supply one, there being no way
+// to arrange a real process that exits on cue.
+func (a *App) watchUntilGone(canWait bool, wait func()) {
+	if !a.mephiWatch.CompareAndSwap(false, true) {
+		return
+	}
+	defer a.mephiWatch.Store(false)
+	defer a.showWindow()
+
+	if canWait {
+		wait()
+	} else {
+		// With no handle, "not running" in the first few seconds means the process
+		// has not appeared yet rather than that it has exited — and acting on it
+		// would flash the launcher straight back up.
+		deadline := time.Now().Add(a.mephiAppear)
+		for !a.mephiRunning() && time.Now().Before(deadline) {
+			time.Sleep(a.mephiPoll)
+		}
+	}
+
+	for a.mephiRunning() {
+		time.Sleep(a.mephiPoll)
 	}
 }
 
@@ -126,11 +406,39 @@ func (a *App) startup(ctx context.Context) {
 // OpenMephi surfaces its own problems, and the absent case is silent by design —
 // see OpenMephiIfInstalled.
 func (a *App) InjectLimbonia() error {
-	if err := limbonia.InjectLimbo(); err != nil {
-		return err
+	// A companion that is already up means Play is only the injection. Two of
+	// them would fight over the same control pipe and the same settings file, and
+	// the running one picks up the freshly patched game by itself — so the second
+	// window would be pure confusion. Checked BEFORE injecting, because injecting
+	// is what makes the game interesting to Mephi and could otherwise race.
+	// Refused before anything else happens. The injector is what STARTS the game,
+	// so with a copy already open there is nothing here that can reach it — it
+	// would either fail or launch a second, and the user would carry on playing
+	// unpatched with no idea why.
+	if a.limbusRunning() {
+		return limbonia.ErrLimbusRunning
 	}
 
-	_ = a.LimboniaApp.OpenMephiIfInstalled()
+	alreadyRunning := a.mephiRunning()
+
+	if a.injectFn == nil {
+		return fmt.Errorf("the launcher is not set up to patch the game")
+	}
+	if err := a.injectFn(); err != nil {
+		return a.reportOrQuit(err)
+	}
+
+	if alreadyRunning || a.openMephiFn == nil {
+		return nil
+	}
+
+	// The one Mephi failure that is not swallowed: a refused elevation prompt
+	// closes the launcher, because nothing it can still offer would work.
+	// Everything else about the companion stays non-fatal — the injection is the
+	// part that had to succeed, and it did.
+	if err := a.openMephiFn(); errors.Is(err, limbonia.ErrElevationCancelled) {
+		return a.reportOrQuit(err)
+	}
 	return nil
 }
 

@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	goruntime "runtime"
 	"time"
@@ -22,6 +21,15 @@ import (
 type LimboniaApp struct {
 	ctx         context.Context
 	downloading bool
+
+	// OnMephiStarted, when set, is called with the companion process the moment
+	// it starts. The launcher hides itself to the system tray while Mephi is up
+	// and comes back when it exits; this is how it learns about both.
+	//
+	// A field rather than a setter method because Wails binds every exported
+	// method on this struct — a SetMephiWatcher(func(...)) would end up in the
+	// generated JavaScript API, taking a callback the frontend cannot supply.
+	OnMephiStarted func(*LaunchedProcess) `json:"-"`
 }
 
 func NewApp() *LimboniaApp {
@@ -59,6 +67,13 @@ func (a *LimboniaApp) OpenFileDialog() (string, error) {
 	// shortcut, where the working directory is not the install directory, and the
 	// injector.cfg written below has to land next to the Injector.exe that reads
 	// it.
+	//
+	// That reader only exists on Windows. This function is not build-tagged, so
+	// the file is written on Linux as well, where nothing ever opens it: no
+	// Injector.exe is installed there (it lives under windows/ in the bundle,
+	// which that platform's extractor skips — see updater.expectedFiles), and the
+	// Linux path loads Limbonia through a Wine DLL override instead of injecting.
+	// Harmless, but it is dead output on Linux rather than something Linux needs.
 	limboniaDir := clientDir()
 	if err := os.Mkdir(limboniaDir, 0750); err != nil && !errors.Is(err, os.ErrExist) {
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
@@ -240,6 +255,12 @@ func mephiPath() string {
 	return filepath.Join(clientDir(), name)
 }
 
+// mephiProcessName is the image name to match a running companion by, which is
+// just the file name of whatever this platform's binary is called.
+func mephiProcessName() string {
+	return filepath.Base(mephiPath())
+}
+
 // OpenMephiIfInstalled launches Mephi when the installed bundle has it, and does
 // nothing at all when it does not.
 //
@@ -283,16 +304,27 @@ func (a *LimboniaApp) OpenMephi() error {
 		return err
 	}
 
-	cmd := exec.Command(binPath)
-	cmd.Dir = clientDir()
-	if err := cmd.Start(); err != nil {
+	// Elevated: Mephi drives the injected DLL, and a medium-integrity process
+	// cannot open a handle to an elevated game. The prompt is per launch — the
+	// launcher itself is deliberately not marked requireAdministrator.
+	proc, err := launchElevated(binPath, clientDir())
+	if err != nil {
 		runtime.LogError(a.ctx, err.Error())
+		if errors.Is(err, ErrElevationCancelled) {
+			// Not a fault: the user was asked and said no. The caller turns this
+			// into a toast, and a modal on top of that would be saying it twice.
+			return elevationRefused("Mephi", err)
+		}
 		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
 			Title:   "Failed to open Mephi",
 			Message: err.Error(),
 			Type:    runtime.ErrorDialog,
 		})
 		return err
+	}
+
+	if a.OnMephiStarted != nil {
+		a.OnMephiStarted(proc)
 	}
 	return nil
 }

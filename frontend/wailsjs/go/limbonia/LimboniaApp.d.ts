@@ -21,4 +21,6 @@ export function OpenFileDialog():Promise<string>;
 
 export function OpenMephi():Promise<void>;
 
+export function OpenMephiIfInstalled():Promise<void>;
+
 export function Startup(arg1:context.Context):Promise<void>;

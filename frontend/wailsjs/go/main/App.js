@@ -14,6 +14,10 @@ export function InjectLimbonia() {
   return window['go']['main']['App']['InjectLimbonia']();
 }
 
+export function IsGameRunning() {
+  return window['go']['main']['App']['IsGameRunning']();
+}
+
 export function IsLinux() {
   return window['go']['main']['App']['IsLinux']();
 }

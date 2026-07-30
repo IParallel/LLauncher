@@ -69,8 +69,11 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		AlwaysOnTop: true,
-		Title:       "LLauncher " + updater.CURRENT_LAUNCHER_VERSION,
+		// Deliberately NOT AlwaysOnTop. The launcher used to pin itself over
+		// everything, which made it a nuisance the moment anything else was open —
+		// including the game and Mephi, which is exactly when it has nothing left
+		// to say. It hides to the tray while Mephi runs instead.
+		Title: "LLauncher " + updater.CURRENT_LAUNCHER_VERSION,
 		// Compact on purpose: the launcher is a settings pane and a Play button,
 		// not a workspace. Sized to the widest content (the Settings card at
 		// 420px) plus the 150px rail, with the window left non-resizable so the
@@ -99,6 +102,9 @@ func main() {
 					app.DownloadLauncher()
 				}
 			}()
+		},
+		OnShutdown: func(ctx context.Context) {
+			app.shutdown(ctx)
 		},
 		Bind: []any{
 			app,

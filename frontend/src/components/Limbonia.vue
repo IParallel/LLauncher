@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {InjectLimbonia, IsLinux, DeleteLimboniaDLL} from "../../wailsjs/go/main/App";
+import {InjectLimbonia, IsLinux, DeleteLimboniaDLL, IsGameRunning} from "../../wailsjs/go/main/App";
 import {EventsOn, LogError} from "../../wailsjs/runtime";
 import Lbutton from "./controls/lbutton.vue";
 import ProgressBar from "./controls/progressBar.vue";
@@ -8,8 +8,28 @@ import {DownloadLimbonia} from "../../wailsjs/go/limbonia/LimboniaApp";
 import {useLauncherVersion} from "../stores";
 import { useToast } from "vue-toastification";
 
+// gameRunning greys the Open button out while Limbus Company is up.
+//
+// The button stays CLICKABLE rather than being disabled: a disabled button fires
+// no click event, so a user who doesn't know why it looks dead gets no
+// explanation no matter how many times they press it. This way every attempt says
+// what to do about it.
+const gameRunning = ref(false)
+
+const refreshGameRunning = async () => {
+  try {
+    gameRunning.value = await IsGameRunning();
+  } catch (_) {
+    // Advisory only — the Go side refuses the launch regardless.
+  }
+}
+
 const injectLimbo = async () => {
   try {
+    if (gameRunning.value) {
+      toast.error("Close Limbus Company first, then press Open")
+      return;
+    }
     if (appState.configState?.limbus_folder === "") {
       toast.error("Please select Limbus Company executable in settings tab")
       return;
@@ -17,6 +37,9 @@ const injectLimbo = async () => {
     await InjectLimbonia();
     toast.success("Starting Mephi...")
   } catch (e: any) {
+    // Covers the game having been started between the last poll and this click:
+    // the Go side refuses and the reason arrives here.
+    await refreshGameRunning();
     toast.error(e);
   }
 }
@@ -97,6 +120,7 @@ onBeforeMount(async () => {
       hasUpdate.value = true
     }
   } catch (err) {}
+  await refreshGameRunning();
 })
 
 const checkInterval = setInterval(async () => {
@@ -105,7 +129,14 @@ const checkInterval = setInterval(async () => {
   hasUpdate.value = appState.serverState?.client_version != appState.configState?.current_client_version
 }, 10_000)
 
-onUnmounted(() => clearInterval(checkInterval))
+// Polled far more often than the version check: this one drives a button the user
+// is looking at, and closing the game should free Open up more or less at once.
+const gameInterval = setInterval(refreshGameRunning, 2_000)
+
+onUnmounted(() => {
+  clearInterval(checkInterval)
+  clearInterval(gameInterval)
+})
 
 // Listen for download progress events
 EventsOn("download:progress", (payload: any) => {
@@ -186,9 +217,20 @@ EventsOn("download:progress", (payload: any) => {
         <ProgressBar :value="progress" />
       </div>
 
+      <!-- Why Open is unavailable, said once and up front rather than only in a
+           toast the user has to earn by clicking. -->
+      <Transition name="badge-pop">
+        <div v-if="gameRunning" class="blocked-notice">
+          <span class="badge-dot"></span>
+          <span>Close Limbus Company first</span>
+        </div>
+      </Transition>
+
       <div class="action-row">
         <div class="action-col" v-if="isLinux || appState.configState?.current_client_version">
-          <lbutton :event-func="injectLimbo" button-text="Open" />
+          <div :class="{ 'is-blocked': gameRunning }">
+            <lbutton :event-func="injectLimbo" button-text="Open" />
+          </div>
         </div>
         <div class="action-col">
           <lbutton :event-func="updateFunc" button-text="Update" />
@@ -369,6 +411,39 @@ EventsOn("download:progress", (payload: any) => {
   letter-spacing: 0.04em;
   text-align: center;
   margin-top: -0.5rem;
+}
+
+/* Blocked notice — shown while the game is open */
+.blocked-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.7rem;
+  background: rgba(139,26,26,0.2);
+  border: 1px solid var(--lc-red);
+  border-radius: 2px;
+  font-family: "MikoDacs", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--lc-red-bright);
+  text-transform: uppercase;
+  width: fit-content;
+  align-self: center;
+}
+
+/* Dimmed, but NOT pointer-events:none — the click has to reach the handler so it
+   can say why nothing happened. Blocking the pointer would recreate exactly the
+   dead-button problem this is meant to explain. */
+.is-blocked {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  transition: opacity 0.2s, filter 0.2s;
+}
+.is-blocked:hover {
+  opacity: 0.6;
+}
+.is-blocked :deep(.lc-btn) {
+  cursor: not-allowed;
 }
 
 /* Action row */

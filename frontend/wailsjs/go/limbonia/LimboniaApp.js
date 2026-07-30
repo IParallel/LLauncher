@@ -34,6 +34,10 @@ export function OpenMephi() {
   return window['go']['limbonia']['LimboniaApp']['OpenMephi']();
 }
 
+export function OpenMephiIfInstalled() {
+  return window['go']['limbonia']['LimboniaApp']['OpenMephiIfInstalled']();
+}
+
 export function Startup(arg1) {
   return window['go']['limbonia']['LimboniaApp']['Startup'](arg1);
 }
