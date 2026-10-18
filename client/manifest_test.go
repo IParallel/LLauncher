@@ -25,7 +25,7 @@ import (
 
 // fixtureSig was produced by Limbonia-Page's signManifest() over fixtureManifest
 // using the production key. Regenerate it if the server key is ever rotated.
-const fixtureSig = "n9StqyFPVC7Fc0a8sZd8c3JJig9KPfa29J4HzFoMlxwp/Z6D0mhTiVjLC0gHGPzBidUavOnNY2N3GNVNMQzS2w=="
+const fixtureSig = "jxH/2V+DZgTP9/SfO8qH9CatrIhGiFs/BpJRlZ4TupgZ6v8+cMBITzZYiMC96FfUpYEOcNIKRtnjB6NkGGkZ0Q=="
 
 func fixtureManifest() *Manifest {
 	return &Manifest{
